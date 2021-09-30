@@ -1,6 +1,11 @@
 import * as packageJson from '../../../package.json';
 import { ErrorHandler } from '../common/errorHandler';
-import { existsAsync, writeFileAsync } from '../common/fsAsync';
+import {
+  existsAsync,
+  stringToRawData,
+  Uri,
+  writeFileAsync,
+} from '../common/fsAsync';
 import { ConfigManager } from '../configuration/configManager';
 import { constants } from '../constants';
 import * as models from '../models';
@@ -92,17 +97,19 @@ export class IconsGenerator implements models.IIconsGenerator {
     outDir: string,
   ): Promise<void> {
     try {
-      const dirExists = await existsAsync(outDir);
+      const dirExists = await existsAsync(Uri.parse(outDir));
       if (!dirExists) {
         await Utils.createDirectoryRecursively(outDir);
       }
 
       await writeFileAsync(
-        Utils.pathUnixJoin(outDir, iconsFilename),
-        JSON.stringify(
-          iconsManifest,
-          null,
-          constants.environment.production ? 0 : 2,
+        Uri.file(Utils.pathUnixJoin(outDir, iconsFilename)),
+        stringToRawData(
+          JSON.stringify(
+            iconsManifest,
+            null,
+            constants.environment.production ? 0 : 2,
+          ),
         ),
       );
 
@@ -121,14 +128,14 @@ export class IconsGenerator implements models.IIconsGenerator {
     );
 
     const entryFilename = constants.environment.production
-      ? constants.extension.distEntryFilename
+      ? constants.extension.distEntryNodeFilename
       : '';
     const entryPath = `${sourceDirRelativePath}${entryFilename}`;
     const oldMainPath = this.manifest.main;
     const mainPathChanged = oldMainPath && oldMainPath !== entryPath;
 
     const uninstallEntryFilename = constants.environment.production
-      ? constants.extension.uninstallEntryFilename
+      ? constants.extension.uninstallEntryNodeFilename
       : 'uninstall.js';
     const uninstallEntryPath = `node ./${sourceDirRelativePath}${uninstallEntryFilename}`;
     const oldUninstallScriptPath = this.manifest.scripts['vscode:uninstall'];
